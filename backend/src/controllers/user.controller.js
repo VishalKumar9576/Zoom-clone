@@ -1,7 +1,7 @@
 import httpStatus from "http-status";
 import { User } from "../models/user.model.js";
 import bcrypt, { hash } from "bcrypt"
-
+import mongoose from "mongoose";
 import crypto from "crypto"
 import { Meeting } from "../models/meeting.model.js";
 const login = async (req, res) => {
@@ -40,11 +40,26 @@ const login = async (req, res) => {
 const register = async (req, res) => {
     const { name, username, password } = req.body;
 
+    // Validate input
+    if (!name || !username || !password) {
+        return res.status(httpStatus.BAD_REQUEST).json({ message: "Please provide name, username, and password" });
+    }
 
     try {
+        // Check MongoDB connection
+        if (mongoose.connection.readyState !== 1) {
+            console.error("MongoDB is not connected. Connection state:", mongoose.connection.readyState);
+            return res.status(httpStatus.SERVICE_UNAVAILABLE).json({ message: "Database connection not available" });
+        }
+
+        console.log(`Attempting to register user: ${username}`);
+        console.log(`MongoDB Connection State: ${mongoose.connection.readyState}`);
+        console.log(`Database Name: ${mongoose.connection.name}`);
+
         const existingUser = await User.findOne({ username });
         if (existingUser) {
-            return res.status(httpStatus.FOUND).json({ message: "User already exists" });
+            console.log(`User ${username} already exists`);
+            return res.status(httpStatus.CONFLICT).json({ message: "User already exists" });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -55,12 +70,45 @@ const register = async (req, res) => {
             password: hashedPassword
         });
 
-        await newUser.save();
+        console.log(`Saving user to database: ${username}`);
+        const savedUser = await newUser.save();
+        
+        console.log(`User saved successfully!`);
+        console.log(`User ID: ${savedUser._id}`);
+        console.log(`User Name: ${savedUser.name}`);
+        console.log(`Username: ${savedUser.username}`);
+        console.log(`Database: ${mongoose.connection.name}`);
+        console.log(`Collection: ${savedUser.collection.name}`);
 
-        res.status(httpStatus.CREATED).json({ message: "User Registered" })
+        // Verify the user was saved by querying it back
+        const verifyUser = await User.findById(savedUser._id);
+        if (verifyUser) {
+            console.log(`Verification: User found in database with ID: ${verifyUser._id}`);
+        } else {
+            console.error(`Warning: User was not found after save!`);
+        }
+
+        res.status(httpStatus.CREATED).json({ 
+            message: "User Registered Successfully",
+            userId: savedUser._id 
+        });
 
     } catch (e) {
-        res.json({ message: `Something went wrong ${e}` })
+        console.error("Registration error:", e);
+        console.error("Error details:", {
+            message: e.message,
+            code: e.code,
+            name: e.name,
+            stack: e.stack
+        });
+        
+        if (e.code === 11000) {
+            return res.status(httpStatus.CONFLICT).json({ message: "Username already exists" });
+        }
+        return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ 
+            message: `Something went wrong: ${e.message}`,
+            error: process.env.NODE_ENV === 'development' ? e.stack : undefined
+        });
     }
 
 }

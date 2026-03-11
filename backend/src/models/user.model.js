@@ -6,6 +6,9 @@ const userScheme = new Schema(
         username: { type: String, required: true, unique: true },
         password: { type: String, required: true },
         token: { type: String }
+    },
+    {
+        timestamps: true // Automatically adds createdAt and updatedAt fields
     }
 )
 
