@@ -19,7 +19,23 @@ var connections = {};
 
 const peerConfigConnections = {
     "iceServers": [
-        { "urls": "stun:stun.l.google.com:19302" }
+        { "urls": "stun:stun.l.google.com:19302" },
+        { "urls": "stun:stun1.l.google.com:19302" },
+        {
+            "urls": "turn:numb.viagenie.ca",
+            "username": "webrtc@live.com",
+            "credential": "muazkh"
+        },
+        {
+            "urls": "turn:openrelay.metered.ca:80",
+            "username": "openrelayproject",
+            "credential": "openrelayproject"
+        },
+        {
+            "urls": "turn:openrelay.metered.ca:443",
+            "username": "openrelayproject",
+            "credential": "openrelayproject"
+        }
     ]
 }
 
@@ -279,7 +295,7 @@ export default function VideoMeetComponent() {
         socketRef.current.on('signal', gotMessageFromServer)
 
         socketRef.current.on('connect', () => {
-            socketRef.current.emit('join-call', window.location.href)
+            socketRef.current.emit('join-call', window.location.pathname)
             socketIdRef.current = socketRef.current.id
 
             socketRef.current.on('chat-message', addMessage)

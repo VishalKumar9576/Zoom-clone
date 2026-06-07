@@ -1,15 +1,14 @@
 import express from "express";
 import { createServer } from "node:http";
-
 import { Server } from "socket.io";
-
 import mongoose from "mongoose";
-import { connectToSocket } from "./controllers/socketManager.js";
-
-import cors from "cors";
-import userRoutes from "./routes/users.routes.js";
 import dotenv from "dotenv";
 
+dotenv.config({ path: "../.env" }); // ✅ correct
+
+import { connectToSocket } from "./controllers/socketManager.js";
+import cors from "cors";
+import userRoutes from "./routes/users.routes.js";
 // Load environment variables
 dotenv.config();
 
@@ -167,3 +166,5 @@ const start = async () => {
 
 
 start();
+
+console.log("ENV:", process.env.MONGODB_URI);
